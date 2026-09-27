@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- ===== Meta for social sharing ===== -->
+  <meta name="description" content="DRAGON is a benchmark for evidence-grounded visual reasoning over diagrams: given a diagram, a question, and its answer, models must localize the visual evidence that justifies the answer." />
+  <meta property="og:title" content="DRAGON: A Benchmark for Evidence-Grounded Visual Reasoning over Diagrams" />
+  <meta property="og:description" content="11,664 annotated instances across ChartQA, Circuit-VQA, InfographicsVQA, MapIQ, MapWise, and AI2D, with a 2,445-instance human-verified test set for evaluating reasoning-level visual grounding in VLMs." />
+  <meta property="og:url" content="https://your-domain.example/dragon" />
+  <meta property="og:image" content="static/images/red-dragon.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <meta name="twitter:title" content="DRAGON: A Benchmark for Evidence-Grounded Visual Reasoning over Diagrams" />
+  <meta name="twitter:description" content="A benchmark that tests whether VLMs ground diagram answers in the right visual evidence, across six diagram domains." />
+  <meta name="twitter:image" content="static/images/red-dragon.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="keywords" content="DRAGON, diagrams, VLMs, visual grounding, evidence grounding, diagram question answering, EDGE, SAGE, VERGE, benchmark" />
+
+  <title>DRAGON: A Benchmark for Evidence-Grounded Visual Reasoning over Diagrams</title>
+
+  <link rel="icon" type="image/png" href="static/images/red-dragon.png" />
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet" />
+  <!-- <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet" /> -->
+
+
+  <!-- Template CSS -->
+  <link rel="stylesheet" href="static/css/bulma.min.css" />
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css" />
+  <link rel="stylesheet" href="static/css/bulma-slider.min.css" />
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+  <link rel="stylesheet" href="static/css/index.css" />
+
+  <!-- Template JS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script src="static/js/bulma-carousel.min.js"></script>
+  <script src="static/js/bulma-slider.min.js"></script>
+  <script src="static/js/index.js"></script>
+
+  <style>
+    /* Results tables (HTML versions of the paper tables) */
+    .results-table { font-size: 0.85rem; margin: 0 auto; }
+    .results-table th, .results-table td { text-align: center !important; vertical-align: middle !important; white-space: nowrap; }
+    .results-table td:first-child, .results-table th:first-child { text-align: left !important; }
+    .results-table .group-row td { background: #ebebeb; font-weight: 700; text-align: center !important; }
+    .results-table .col-sep { border-left: 2px solid #dbdbdb; }
+    /* Tables sized to fit the container (no horizontal scroll on desktop) */
+    .results-table { width: 100%; font-size: 0.78rem; }
+    .results-table th, .results-table td { padding: 0.3em 0.35em !important; }
+
+    /* Title: always centered on the page, width capped, font scales with the screen.
+       (index.css gives it width:70vw anchored to the left of a narrower column, which drifts off-center) */
+    .publication-title {
+      width: min(92vw, 1100px) !important;
+      max-width: none !important;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(1.6rem, 1rem + 2.6vw, 3rem) !important;
+      line-height: 1.2 !important;
+      text-wrap: balance;               /* even line lengths when it wraps */
+      margin-bottom: 1.25rem !important;
+    }
+
+    /* In Bulma, .hero is a flex column; a centered (margin:auto) container inside it shrinks/grows
+       to its content instead of the screen. Force full width so About/Qualitative fit on phones. */
+    .hero > .container,
+    .hero-body > .container { width: 100%; }
+
+    /* Medium spacing between sections (Bulma defaults stack up to ~7rem gaps) */
+    .section { padding: 2rem 1.5rem; }
+    body > .hero > .hero-body { padding-bottom: 0.5rem; }
+    .hero.is-small .hero-body { padding: 1rem 1.5rem; }
+    #results > .hero-body { padding: 2rem 1.5rem; }
+    .section > .container > .title.is-2,
+    .section > .container > .title.is-3,
+    #results .title.is-2 { margin-bottom: 1rem; }
+
+    /* Team: all seven members on one line on desktop */
+    #team .container { max-width: 1100px; }
+    #team .team-row { gap: 1.25rem; }
+    #team .team-member { flex: 0 0 125px; }
+    #team .team-member img { width: 105px; height: 105px; }
+    @media (min-width: 1024px) { #team .team-row { flex-wrap: nowrap; } }
+
+    /* Author names take their institution's colour on hover */
+    .aff-asu   { --aff: #8c1d40; }   /* ASU maroon */
+    .aff-umd   { --aff: #e21833; }   /* UMD red */
+    .aff-adobe { --aff: #eb1000; }   /* Adobe red */
+    .publication-authors .author-block a:hover,
+    #team .team-member a:hover { color: var(--aff, #000) !important; }
+    .publication-authors .author-block a::after { background-color: var(--aff, #000); }
+
+    /* Adobe's logo is a square; make it round like the ASU and UMD seals */
+    .logo-strip-img[alt="Adobe Research"] { border-radius: 50%; }
+
+    /* Explore button inside a caption: same look, sized to the text so the line height doesn't change */
+    .link-block.is-inline .pub-link {
+      display: inline;
+      font-size: inherit;
+      padding: 0;
+      margin: 0;
+      white-space: nowrap;
+    }
+    .link-block.is-inline .icon {
+      width: 1em;
+      height: 1em;
+      vertical-align: -0.125em;
+      margin-left: 0.2em;
+    }
+
+    /* Results tables: domain headers in the Examples-figure hues, using the same deep tones as the header links */
+    .domain-table thead tr:first-child th:nth-child(2) { background: #e2eaf6; color: #4a7cc4; box-shadow: inset 0 3px 0 #4a7cc4; }  /* ChartQA */
+    .domain-table thead tr:nth-child(2) th:nth-child(n+1):nth-child(-n+3) { background: #f2f6fb; }
+    .domain-table thead tr:first-child th:nth-child(3) { background: #ece5f1; color: #8a5ea8; box-shadow: inset 0 3px 0 #8a5ea8; }  /* Circuit-VQA */
+    .domain-table thead tr:nth-child(2) th:nth-child(n+4):nth-child(-n+6) { background: #f7f4f9; }
+    .domain-table thead tr:first-child th:nth-child(4) { background: #f5e4eb; color: #c2567f; box-shadow: inset 0 3px 0 #c2567f; }  /* InfoVQA */
+    .domain-table thead tr:nth-child(2) th:nth-child(n+7):nth-child(-n+9) { background: #fbf3f6; }
+    .domain-table thead tr:first-child th:nth-child(5) { background: #f8e7e5; color: #d4685a; box-shadow: inset 0 3px 0 #d4685a; }  /* MapIQ */
+    .domain-table thead tr:nth-child(2) th:nth-child(n+10):nth-child(-n+12) { background: #fcf4f3; }
+    .domain-table thead tr:first-child th:nth-child(6) { background: #f7ecdf; color: #d08a3a; box-shadow: inset 0 3px 0 #d08a3a; }  /* MapWise */
+    .domain-table thead tr:nth-child(2) th:nth-child(n+13):nth-child(-n+15) { background: #fcf7f1; }
+    .domain-table thead tr:first-child th:nth-child(7) { background: #dfefef; color: #3a9a9a; box-shadow: inset 0 3px 0 #3a9a9a; }  /* AI2D */
+    .domain-table thead tr:nth-child(2) th:nth-child(n+16):nth-child(-n+18) { background: #f1f8f8; }
+    .domain-table thead tr:nth-child(2) th, .domain-table thead th[rowspan] { color: #363636; }
+
+    /* Results toggle: segmented control with a sliding dark pill */
+    .seg-toggle {
+      position: relative;
+      display: inline-flex;
+      padding: 4px;
+      background: #f0f0f0;
+      border-radius: 999px;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+    }
+    .seg-indicator {
+      position: absolute;
+      top: 4px; bottom: 4px; left: 4px;
+      border-radius: 999px;
+      background: #3a9a9a;            /* set per button from data-color */
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+      transition: transform .45s cubic-bezier(.65,0,.35,1), width .45s cubic-bezier(.65,0,.35,1),
+                  background-color .45s ease;
+    }
+    .seg-btn {
+      position: relative;            /* above the pill */
+      z-index: 1;
+      border: 0;
+      background: none;
+      padding: .45rem 1.3rem;
+      font: 600 .9rem 'Google Sans', sans-serif;
+      color: #4a4a4a;
+      cursor: pointer;
+      border-radius: 999px;
+      transition: color .35s ease;
+    }
+    .seg-btn.is-active { color: #fff; }
+    .seg-btn:focus { outline: none; }
+
+    /* Table panes: slide + crossfade, container height eases between the two tables */
+    .pane-stage { position: relative; overflow: hidden; transition: height .5s cubic-bezier(.65,0,.35,1); }
+    .pane {
+      transition: opacity .45s ease, transform .5s cubic-bezier(.22,.8,.3,1);
+    }
+    .pane:not(.is-active) {
+      position: absolute; top: 0; left: 0; right: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .pane.from-right:not(.is-active) { transform: translateX(40px); }
+    .pane.from-left:not(.is-active)  { transform: translateX(-40px); }
+    .pane.is-active { opacity: 1; transform: none; }
+
+    /* Qualitative slider: every figure gets the same box so short slides don't leave gaps */
+    /* 56px side gutters so the 42px arrows sit beside the figure, not on it */
+    #qualitative-carousel .item { padding: 0 56px; margin: 0; }
+    #qualitative-carousel, #qualitative-carousel .slider,
+    #qualitative-carousel *:focus { outline: none; }   /* no blue focus frame after clicking */
+    #qualitative-carousel .item img { height: min(560px, 52vw); width: 100% !important; object-fit: contain; }
+    #qualitative-carousel .item p { margin-bottom: 0; }
+    #qualitative-carousel .slider-pagination { position: static; padding: .75rem 0 .6rem; }  /* room for the enlarged active dot */
+    #qualitative-carousel .slider-pagination .slider-page { background: #b5b5b5; }
+    #qualitative-carousel .slider-pagination .slider-page.is-active { background: #363636; }
+  </style>
+</head>
+<body>
+
+
+<!-- ===== Hero / Header ===== -->
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+
+            <!-- Title -->
+            <h1 class="title is-1 publication-title">
+              <strong style="font-weight:800;">DRAGON</strong> : A Benchmark for Evidence-Grounded Visual Reasoning over Diagrams
+            </h1>
+
+            <!-- Authors -->
+            <div class="is-size-5 publication-authors">
+              <span class="author-block aff-asu">
+                <a href="https://anirudh6415.github.io/" target="_blank">Anirudh Iyengar Kaniyar Narayana Iyengar</a>
+                <img src="images/authors/ASU-logo.png" alt="ASU" class="aff-logo">,
+              </span>
+              <span class="author-block aff-asu">
+                <a href="https://www.linkedin.com/in/tampuravi/" target="_blank">Tampu Ravi Kumar</a>
+                <img src="images/authors/ASU-logo.png" alt="ASU" class="aff-logo">,
+              </span>
+              <span class="author-block aff-asu">
+                <a href="https://www.linkedin.com/in/gauravnajpande/" target="_blank">Gaurav Najpande</a>
+                <img src="images/authors/ASU-logo.png" alt="ASU" class="aff-logo">,
+              </span>
+              <span class="author-block aff-umd">
+                <a href="https://manansuri.com/" target="_blank">Manan Suri</a>
+                <img src="images/authors/umc.png" alt="University of Maryland" class="aff-logo">,
+              </span>
+              <span class="author-block aff-umd">
+                <a href="https://www.cs.umd.edu/people/dmanocha" target="_blank">Dinesh Manocha</a>
+                <img src="images/authors/umc.png" alt="University of Maryland" class="aff-logo">,
+              </span>
+              <span class="author-block aff-adobe">
+                <a href="https://research.adobe.com/person/puneet-mathur/" target="_blank">Puneet Mathur</a>
+                <img src="images/authors/adobe.png" alt="Adobe Research" class="aff-logo">,
+              </span>
+              <span class="author-block aff-asu">
+                <a href="https://vgupta123.github.io/" target="_blank">Vivek Gupta</a>
+                <img src="images/authors/ASU-logo.png" alt="ASU" class="aff-logo">
+              </span>
+            </div>
+
+            <!-- Affiliations (kept simple; same visual style) -->
+            <div class="is-size-5 publication-authors">
+              <span class="author-block">
+                <img src="images/authors/ASU-logo.png" alt="ASU" class="aff-logo"> Arizona State University,
+              </span>
+              <span class="author-block">
+                <img src="images/authors/adobe.png" alt="Adobe Research" class="aff-logo"> Adobe Research,
+              </span>
+              <span class="author-block">
+                <img src="images/authors/umc.png" alt="University of Maryland" class="aff-logo"> University of Maryland
+              </span>
+            </div>
+
+            <!-- Venue/Status line -->
+            <div class="is-size-5 publication-authors" style="margin-top:1rem; padding-top:0.5rem;  gap: 0.4rem 1.5rem;">
+              <span class="author-block publication-venue" style="font-weight:600; color:#696969">
+              <a href="https://arxiv.org/abs/2604.25231" target="_blank" style="color:#696969; text-decoration:none;">
+                Preprint 2026
+              </a>
+            </span>
+            </div>
+
+            <!-- Buttons -->
+            <div class="publication-links" style="margin-top:1rem; border-top:1px solid #ddd; padding-top:0.5rem;">
+
+              <!-- Paper -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2604.25231" class="pub-link" target="_blank" rel="noopener">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+
+              <!-- Explore -->
+              <span class="link-block">
+                <a href="explore.html" class="pub-link" target="_self">
+                  <span class="icon"><i class="fas fa-compass"></i></span>
+                  <span>Explore</span>
+                </a>
+              </span>
+
+              <!-- Code -->
+              <span class="link-block">
+                <a href="#" class="pub-link" target="_blank">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+
+              <!-- Dataset -->
+              <span class="link-block">
+                <a href="#" class="pub-link" target="_blank">
+                  <span class="icon"><i class="fas fa-database"></i></span>
+                  <span>Dataset</span>
+                </a>
+              </span>
+
+            </div>
+
+            <!-- ===== Benchmark Overview (hero first) ===== -->
+<section class="hero is-small" style="margin-top:1rem; border-top:1px solid #ddd; padding-top:0.5rem;" >
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-10 has-text-centered">
+          <figure class="image" style="max-width:100%; margin:0 auto;">
+            <img src="images/dragon/dragon-model-comp.png"
+                 alt="Examples of leading models on the DRAGON benchmark"
+                 class="img-shadow"
+                 style="width:100%; border-radius:8px;" />
+          </figure>
+          <h2 class="subtitle has-text-centered" style="margin-top:1rem;">
+            Examples of leading models on the Evidence-Grounded Visual Reasoning (DRAGON) benchmark.
+            DRAGON contains diverse diagrams that pose challenges to current models.
+          </h2>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- ===== About / Abstract (DRAGON) ===== -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">About</h2>
+        <div class="content has-text-justified">
+          <p>
+            Diagram question answering (DQA) requires models to interpret structured visual representations such as
+            charts, maps, infographics, circuit schematics, and scientific diagrams. Recent vision-language models (VLMs)
+            often achieve high answer accuracy on these tasks, yet <em>correct answers do not guarantee that models ground
+            their reasoning in the diagram regions that support the prediction</em>. Models may instead rely on textual
+            correlations or dataset artifacts without identifying the visual evidence required to verify the answer.
+          </p>
+          <p>
+            We introduce <strong>DRAGON</strong>, a benchmark for evaluating
+            evidence-grounded visual reasoning in diagrams. Given a diagram, a question, and the correct answer, a model must
+            predict bounding boxes that correspond to the visual elements required to justify the answer. These evidence
+            regions may include answer-bearing components, textual labels, legends, axes, connectors, and other supporting
+            structures involved in the reasoning process.
+          </p>
+          <p>
+            Our evaluation on recent VLMs reveals that even Claude Opus 4.6 achieves a Grounding IoU of only
+            <strong>23.8%</strong> on AI2D, showing that faithful visual grounding remains an open challenge.
+            DRAGON supports future research on models that ground their
+            predictions in visual evidence.
+          </p>
+          <p class="is-size-6">
+            Dataset scope (high level): 11,664 annotated question instances from six diagram QA datasets
+            (ChartQA, Circuit-VQA, InfographicsVQA, MapIQ, MapWise, and AI2D), with a 2,445-instance test set carrying
+            human-verified evidence annotations and a standardized evaluation framework.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ===== Dataset ===== -->
+<section class="section" id="dataset">
+  <div class="container is-max-desktop">
+    <h2 class="title is-2 has-text-centered">Dataset</h2>
+
+    <div class="content has-text-justified">
+      <p>
+        <strong>DRAGON</strong> is a human-verified benchmark for evaluating evidence-grounded reasoning in diagrams, built
+        from six established diagram QA datasets: <strong>AI2D</strong>, <strong>ChartQA</strong>,
+        <strong>Circuit-VQA</strong>, <strong>InfographicsVQA</strong>, <strong>MapIQ</strong>, and
+        <strong>MapWise</strong>, covering scientific diagrams, charts, circuit schematics, infographics, and geographic
+        maps. The annotation pipeline produces <strong>11,664</strong> annotated question instances, and we release a test
+        split of <strong>2,445</strong> human-verified instances with a standardized evaluation framework (training and
+        validation splits will follow in future work).
+      </p>
+    </div>
+
+    <!-- ===== Composition + Examples (side by side) ===== -->
+    <div class="content" style="margin-top:2rem;">
+      <h3 class="title is-4">Benchmark Composition &amp; Examples</h3>
+      <div class="columns is-centered is-vcentered" style="margin-top:1rem;">
+        <div class="column is-5 has-text-centered">
+          <figure class="image">
+            <img src="images/dragon/Sunburst_plot_final.jpg"
+                 alt="DRAGON benchmark composition sunburst plot"
+                 class="img-shadow"
+                 style="width:100%; border-radius:8px;" />
+          </figure>
+          <p class="is-size-6 has-text-grey" style="margin-top:.5rem;">
+            <strong>Composition.</strong> Inner ring: question | image counts per domain. Outer ring: diagram-type or
+            question-type sub-categories (e.g., Resistor, V Bar, Food Chain Webs, Single Span).
+          </p>
+        </div>
+        <div class="column is-7 has-text-centered">
+          <figure class="image">
+            <img src="images/dragon/dragon-dataset-example.png"
+                 alt="Examples from each of the six DRAGON diagram domains"
+                 class="img-shadow"
+                 style="width:100%; border-radius:8px;" />
+          </figure>
+          <p class="is-size-6 has-text-grey" style="margin-top:.5rem;">
+            <strong>Examples.</strong> One instance per domain, each paired with a question, answer, and bounding boxes
+            marking the visual evidence required to justify the answer.
+            <span class="link-block is-inline">
+              <a href="explore.html" class="pub-link" target="_self">
+                <span class="icon"><i class="fas fa-compass"></i></span>
+                <span>Explore</span>
+              </a>
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Annotation & Verification (paragraph + table side by side) ===== -->
+    <div class="content" style="margin-top:2rem;">
+      <h3 class="title is-4">Annotation &amp; Verification</h3>
+      <div class="columns is-vcentered">
+        <div class="column is-7 has-text-justified">
+          <p>
+            Candidate regions are initialized from existing annotations or, when none exist, via template-based region
+            transfer (homography alignment from an annotated template). Multimodal models then propose
+            question-conditioned evidence in the DIAGRAMS interface, and annotators refine it to the minimal set of
+            regions required to justify the answer. Six annotators followed a shared protocol with two independent
+            reviews per instance and senior arbitration. Agreement is measured on 100 instances per dataset under
+            <strong>Complete Visual Reasoning (CVR)</strong> and <strong>Core Evidence Alignment (CEA)</strong>.
+          </p>
+        </div>
+        <div class="column is-5 has-text-centered">
+          <div class="table-container">
+            <table class="table is-bordered is-striped is-narrow is-hoverable results-table">
+              <thead>
+                <tr><th>Dataset</th><th>Criterion</th><th>Agr. (%)</th><th>&kappa;</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>ChartQA</td><td>CVR</td><td>87.0</td><td>0.658</td></tr>
+                <tr><td>ChartQA</td><td>CEA</td><td>83.0</td><td>0.589</td></tr>
+                <tr><td>Circuit-VQA</td><td>CVR</td><td>73.0</td><td>0.464</td></tr>
+                <tr><td>Circuit-VQA</td><td>CEA</td><td>85.0</td><td>0.540</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="is-size-6 has-text-grey" style="margin-top:.5rem;">
+            <strong>Table 1.</strong> Inter-annotator agreement for reasoning-level evidence selection under Complete Visual Reasoning (CVR) and Core Evidence Alignment (CEA).
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<section class="section" id="input-formats">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Evaluation Pipeline</h2>
+
+    <div class="content has-text-justified">
+      <p>
+        Given a diagram, a question, and its verified answer, models must predict bounding boxes for the visual evidence
+        that justifies the answer. We compare three prompting protocols: <strong>EDGE</strong> predicts the evidence set
+        directly, <strong>SAGE</strong> first lists the evidence elements and then grounds each one, and
+        <strong>VERGE</strong> adds a self-verification pass that fixes boxes and adds missing evidence. Predictions are
+        scored with <strong>Max-Pair IoU</strong> (best single-box overlap), <strong>Grounding IoU</strong> (overlap of
+        the full predicted and gold evidence regions), and box-level <strong>F1</strong>.
+      </p>
+    </div>
+
+    <div class="columns is-centered" style="margin-top: 1rem;">
+      <div class="column is-10 has-text-centered">
+        <figure class="image" style="max-width:100%; margin:0 auto;">
+          <img
+            src="images/dragon/dragon-architecture.png"
+            alt="Overview of the DRAGON benchmark construction and evaluation pipeline."
+            class="img-shadow"
+            style="width:100%; border-radius:8px;" />
+        </figure>
+        <p class="is-size-6 has-text-grey" style="margin-top:.6rem;">
+          Overview of the DRAGON pipeline: data generation, prompting &amp; reasoning, and visual region extraction.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===== Qualitative Analysis ===== -->
+<section class="section hero is-light" id="qualitative">
+  <div class="container" style="max-width:1100px;">
+    <h2 class="title is-2 has-text-centered">Qualitative Analysis</h2>
+
+    <div class="content has-text-justified">
+      <p>
+        We present qualitative grounding results across all eight models and three prompting strategies, illustrating
+        characteristic success and failure modes across both model families and prompt designs.
+      </p>
+    </div>
+
+    <!-- Slider: model-wise and prompt-wise success / failure
+         (attached below without autoplay; no "carousel" class so index.js doesn't autoplay it) -->
+    <div id="qualitative-carousel" class="results-carousel" style="margin-top:.5rem;">
+      <div class="item has-text-centered">
+        <figure class="image">
+          <img src="images/dragon/dragon-model-sucess.png"
+               alt="Model-wise success case on a MapWise instance"
+               class="img-shadow"
+               style="width:100%; border-radius:8px;" />
+        </figure>
+        <p class="is-size-6 has-text-grey" style="margin-top:.5rem;">
+          <strong>Model-wise success (MapWise).</strong> The gold evidence marks Madhya Pradesh as the state in the 4000-5000 thousand tonnes range and the corresponding legend segment. Closed-source models produce compact, well-localized predictions, while open-weight models exhibit varying degrees of over-prediction and spatial imprecision.
+        </p>
+      </div>
+
+      <div class="item has-text-centered">
+        <figure class="image">
+          <img src="images/dragon/dragon-model-failure.png"
+               alt="Model-wise failure case on a ChartQA instance"
+               class="img-shadow"
+               style="width:100%; border-radius:8px;" />
+        </figure>
+        <p class="is-size-6 has-text-grey" style="margin-top:.5rem;">
+          <strong>Model-wise failure (ChartQA).</strong> The gold evidence marks the favorable (64) and unfavorable (28) data points at 1985, whose difference yields 36. All eight models fail to localize both points, instead grounding chart titles, subtitles, full trend lines, or axis regions.
+        </p>
+      </div>
+
+      <div class="item has-text-centered">
+        <figure class="image">
+          <img src="images/dragon/dragon-prompt-sucess.png"
+               alt="Prompt-wise success cases across all six DRAGON domains"
+               class="img-shadow"
+               style="width:100%; border-radius:8px;" />
+        </figure>
+        <p class="is-size-6 has-text-grey" style="margin-top:.5rem;">
+          <strong>Prompt-wise success across all six domains.</strong> Rows show the ground truth (Original) and predictions under EDGE, SAGE, and VERGE. All three strategies localize the core evidence, with VERGE producing the most complete coverage in most cases.
+        </p>
+      </div>
+
+      <div class="item has-text-centered">
+        <figure class="image">
+          <img src="images/dragon/dragon-prompt-failure.png"
+               alt="Prompt-wise failure cases across all six DRAGON domains"
+               class="img-shadow"
+               style="width:100%; border-radius:8px;" />
+        </figure>
+        <p class="is-size-6 has-text-grey" style="margin-top:.5rem;">
+          <strong>Prompt-wise failure across all six domains.</strong> All three strategies fail to recover the complete gold evidence, with failure modes that persist regardless of prompt design: over-prediction in structurally dense diagrams, missing evidence in multi-hop instances, and imprecise localization in spatially ambiguous regions.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.bulmaCarousel) {
+      bulmaCarousel.attach('#qualitative-carousel', {
+        slidesToScroll: 1,
+        slidesToShow: 1,
+        pagination: true,
+        navigation: true,
+        loop: true,
+        autoplay: false
+      });
+    }
+  });
+</script>
+
+
+<!-- ===== Results ===== -->
+<section class="hero is-small" id="results">
+  <div class="hero-body">
+    <div class="container" style="max-width:1100px;">
+      <h2 class="title is-2 has-text-centered">Results</h2>
+
+      <div class="content has-text-centered" style="margin-bottom:1rem;">
+        <p>
+          Grounding scores of eight VLMs across the six domains. Even the strongest models reach low
+          G<sub>IoU</sub> and F1: they find <em>where</em> evidence lies but rarely capture all of it.
+          Best per column in <strong>bold</strong>.
+        </p>
+      </div>
+
+      <!-- Toggle between the two tables -->
+      <div class="has-text-centered" style="margin-bottom:1rem;">
+        <div class="seg-toggle" id="results-tabs">
+          <span class="seg-indicator"></span>
+          <button class="seg-btn is-active" data-pane="pane-model" data-color="#3a9a9a">By Model</button>
+          <button class="seg-btn" data-pane="pane-prompt" data-color="#8a5ea8">By Prompt</button>
+        </div>
+      </div>
+
+      <div class="pane-stage">
+      <div id="pane-model" class="pane is-active from-left">
+      <!-- Model-level table -->
+      <div class="table-container">
+        <table class="table is-bordered is-striped is-narrow is-hoverable results-table domain-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Model</th>
+              <th colspan="3" class="col-sep">ChartQA</th>
+              <th colspan="3" class="col-sep">Circuit-VQA</th>
+              <th colspan="3" class="col-sep">InfoVQA</th>
+              <th colspan="3" class="col-sep">MapIQ</th>
+              <th colspan="3" class="col-sep">MapWise</th>
+              <th colspan="3" class="col-sep">AI2D</th>
+            </tr>
+            <tr>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Claude Opus 4.6</strong></td>
+              <td class="col-sep">23.9</td><td>11.4</td><td>6.9</td>
+              <td class="col-sep">9.8</td><td>3.9</td><td>3.4</td>
+              <td class="col-sep"><strong>10.7</strong></td><td>4.3</td><td>3.7</td>
+              <td class="col-sep"><strong>53.7</strong></td><td><strong>28.4</strong></td><td><strong>21.8</strong></td>
+              <td class="col-sep">21.2</td><td>8.3</td><td>6.4</td>
+              <td class="col-sep"><strong>39.2</strong></td><td><strong>23.8</strong></td><td><strong>14.7</strong></td></tr>
+            <tr><td><strong>Claude Sonnet 4.6</strong></td>
+              <td class="col-sep">13.7</td><td>7.7</td><td>2.3</td>
+              <td class="col-sep">4.4</td><td>2.2</td><td>0.1</td>
+              <td class="col-sep">3.2</td><td>1.6</td><td>0.1</td>
+              <td class="col-sep">40.6</td><td>21.3</td><td>13.8</td>
+              <td class="col-sep">23.9</td><td>9.7</td><td>4.2</td>
+              <td class="col-sep">23.8</td><td>15.9</td><td>5.5</td></tr>
+            <tr><td><strong>Kimi K2.5</strong></td>
+              <td class="col-sep"><strong>33.1</strong></td><td><strong>15.1</strong></td><td><strong>9.5</strong></td>
+              <td class="col-sep"><strong>11.1</strong></td><td>3.4</td><td>2.8</td>
+              <td class="col-sep">10.0</td><td>3.3</td><td>3.4</td>
+              <td class="col-sep">41.0</td><td>17.4</td><td>12.5</td>
+              <td class="col-sep"><strong>29.2</strong></td><td><strong>10.8</strong></td><td><strong>9.3</strong></td>
+              <td class="col-sep">35.9</td><td>19.0</td><td>12.2</td></tr>
+            <tr><td><strong>Gemini 3 Pro</strong></td>
+              <td class="col-sep">15.9</td><td>9.7</td><td>6.5</td>
+              <td class="col-sep">9.4</td><td><strong>5.6</strong></td><td><strong>5.7</strong></td>
+              <td class="col-sep">8.7</td><td><strong>5.5</strong></td><td><strong>4.0</strong></td>
+              <td class="col-sep">10.9</td><td>4.3</td><td>3.1</td>
+              <td class="col-sep">14.9</td><td>8.5</td><td>7.7</td>
+              <td class="col-sep">23.5</td><td>14.2</td><td>12.6</td></tr>
+            <tr><td><strong>Llama4-Maverick-17B-IT</strong></td>
+              <td class="col-sep">7.7</td><td>4.9</td><td>0.6</td>
+              <td class="col-sep">3.6</td><td>1.8</td><td>0.2</td>
+              <td class="col-sep">1.9</td><td>1.5</td><td>0.0</td>
+              <td class="col-sep">15.7</td><td>6.2</td><td>1.0</td>
+              <td class="col-sep">11.1</td><td>5.2</td><td>1.1</td>
+              <td class="col-sep">13.2</td><td>9.5</td><td>2.4</td></tr>
+            <tr><td><strong>Qwen3.5-35B-A3B</strong></td>
+              <td class="col-sep">12.6</td><td>5.7</td><td>0.8</td>
+              <td class="col-sep">5.4</td><td>2.1</td><td>0.2</td>
+              <td class="col-sep">2.6</td><td>1.3</td><td>0.0</td>
+              <td class="col-sep">18.3</td><td>4.7</td><td>0.8</td>
+              <td class="col-sep">12.3</td><td>4.3</td><td>0.8</td>
+              <td class="col-sep">16.3</td><td>9.2</td><td>1.2</td></tr>
+            <tr><td><strong>Gemma3-27B-IT</strong></td>
+              <td class="col-sep">8.0</td><td>4.1</td><td>0.2</td>
+              <td class="col-sep">6.6</td><td>1.6</td><td>0.2</td>
+              <td class="col-sep">4.2</td><td>1.1</td><td>0.1</td>
+              <td class="col-sep">18.8</td><td>4.5</td><td>0.7</td>
+              <td class="col-sep">15.2</td><td>5.1</td><td>0.7</td>
+              <td class="col-sep">19.0</td><td>12.4</td><td>2.0</td></tr>
+            <tr><td><strong>InternVL3.5-38B</strong></td>
+              <td class="col-sep">8.2</td><td>3.8</td><td>2.6</td>
+              <td class="col-sep">5.1</td><td>2.0</td><td>1.8</td>
+              <td class="col-sep">2.4</td><td>1.1</td><td>0.8</td>
+              <td class="col-sep">8.6</td><td>2.5</td><td>2.0</td>
+              <td class="col-sep">6.0</td><td>2.7</td><td>2.3</td>
+              <td class="col-sep">15.0</td><td>9.2</td><td>6.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="is-size-6 has-text-grey has-text-centered" style="margin-top:.5rem;">
+        <strong>Table 3.</strong> Model-level grounding performance across diagram domains averaged over EDGE, SAGE, and VERGE prompting. We report Max-Pair IoU (MP<sub>IoU</sub>), Grounding IoU (G<sub>IoU</sub>), and F1. Across models, MP<sub>IoU</sub> consistently exceeds G<sub>IoU</sub> and F1, indicating that models often localize approximate evidence regions but fail to capture the complete reasoning evidence required for diagram question answering.
+      </p>
+      </div>
+
+      <div id="pane-prompt" class="pane from-right">
+      <div class="table-container">
+        <table class="table is-bordered is-narrow is-hoverable results-table domain-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Prompt</th>
+              <th colspan="3" class="col-sep">ChartQA</th>
+              <th colspan="3" class="col-sep">Circuit-VQA</th>
+              <th colspan="3" class="col-sep">InfoVQA</th>
+              <th colspan="3" class="col-sep">MapIQ</th>
+              <th colspan="3" class="col-sep">MapWise</th>
+              <th colspan="3" class="col-sep">AI2D</th>
+            </tr>
+            <tr>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+              <th class="col-sep">MP<sub>IoU</sub></th><th>G<sub>IoU</sub></th><th>F1</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="group-row"><td colspan="19">Claude Opus 4.6</td></tr>
+            <tr><td><strong>EDGE</strong></td>
+              <td class="col-sep">27.6</td><td>13.9</td><td>9.0</td>
+              <td class="col-sep">7.0</td><td>4.1</td><td>3.5</td>
+              <td class="col-sep">8.7</td><td>4.5</td><td>3.6</td>
+              <td class="col-sep">51.1</td><td><strong>31.0</strong></td><td><strong>22.9</strong></td>
+              <td class="col-sep">20.4</td><td>8.5</td><td>7.8</td>
+              <td class="col-sep">34.5</td><td>23.7</td><td><strong>15.8</strong></td></tr>
+            <tr><td><strong>SAGE</strong></td>
+              <td class="col-sep">8.6</td><td>4.6</td><td>2.4</td>
+              <td class="col-sep">12.2</td><td>3.8</td><td>3.0</td>
+              <td class="col-sep"><strong>12.5</strong></td><td>4.1</td><td>3.7</td>
+              <td class="col-sep">51.6</td><td>24.3</td><td>20.3</td>
+              <td class="col-sep">19.4</td><td>7.0</td><td>4.8</td>
+              <td class="col-sep"><strong>42.5</strong></td><td><strong>24.2</strong></td><td>14.1</td></tr>
+            <tr><td><strong>VERGE</strong></td>
+              <td class="col-sep"><strong>35.7</strong></td><td>15.6</td><td>9.3</td>
+              <td class="col-sep">10.3</td><td>3.8</td><td>3.6</td>
+              <td class="col-sep">11.0</td><td>4.2</td><td>3.7</td>
+              <td class="col-sep"><strong>58.4</strong></td><td>30.0</td><td>22.3</td>
+              <td class="col-sep">23.9</td><td>9.5</td><td>6.5</td>
+              <td class="col-sep">40.6</td><td>23.5</td><td>14.3</td></tr>
+
+            <tr class="group-row"><td colspan="19">Kimi K2.5</td></tr>
+            <tr><td><strong>EDGE</strong></td>
+              <td class="col-sep">32.1</td><td><strong>18.6</strong></td><td><strong>11.8</strong></td>
+              <td class="col-sep">7.5</td><td>4.1</td><td>3.6</td>
+              <td class="col-sep">10.3</td><td>4.9</td><td><strong>4.9</strong></td>
+              <td class="col-sep">36.5</td><td>17.4</td><td>13.6</td>
+              <td class="col-sep">23.8</td><td>9.4</td><td><strong>10.1</strong></td>
+              <td class="col-sep">30.4</td><td>18.3</td><td>13.8</td></tr>
+            <tr><td><strong>SAGE</strong></td>
+              <td class="col-sep">32.6</td><td>13.7</td><td>7.9</td>
+              <td class="col-sep"><strong>14.3</strong></td><td>2.8</td><td>2.0</td>
+              <td class="col-sep">10.1</td><td>2.1</td><td>2.1</td>
+              <td class="col-sep">46.4</td><td>18.3</td><td>12.8</td>
+              <td class="col-sep"><strong>37.3</strong></td><td><strong>13.3</strong></td><td>9.7</td>
+              <td class="col-sep">42.2</td><td>20.9</td><td>12.4</td></tr>
+            <tr><td><strong>VERGE</strong></td>
+              <td class="col-sep">34.6</td><td>13.0</td><td>8.7</td>
+              <td class="col-sep">11.6</td><td>3.4</td><td>2.7</td>
+              <td class="col-sep">9.6</td><td>3.0</td><td>3.1</td>
+              <td class="col-sep">40.2</td><td>16.6</td><td>11.2</td>
+              <td class="col-sep">26.6</td><td>9.7</td><td>8.0</td>
+              <td class="col-sep">35.1</td><td>17.7</td><td>10.3</td></tr>
+
+            <tr class="group-row"><td colspan="19">Gemini 3 Pro</td></tr>
+            <tr><td><strong>EDGE</strong></td>
+              <td class="col-sep">16.1</td><td>9.7</td><td>6.5</td>
+              <td class="col-sep">10.0</td><td><strong>5.8</strong></td><td><strong>5.8</strong></td>
+              <td class="col-sep">8.8</td><td>5.3</td><td>4.3</td>
+              <td class="col-sep">14.6</td><td>6.1</td><td>4.0</td>
+              <td class="col-sep">19.4</td><td>11.3</td><td>9.4</td>
+              <td class="col-sep">29.3</td><td>18.4</td><td>14.9</td></tr>
+            <tr><td><strong>SAGE</strong></td>
+              <td class="col-sep">22.3</td><td>14.0</td><td>9.2</td>
+              <td class="col-sep">9.1</td><td>5.4</td><td>5.6</td>
+              <td class="col-sep">10.9</td><td><strong>7.3</strong></td><td>4.8</td>
+              <td class="col-sep">10.1</td><td>2.8</td><td>3.1</td>
+              <td class="col-sep">9.7</td><td>5.0</td><td>5.0</td>
+              <td class="col-sep">20.2</td><td>11.0</td><td>11.0</td></tr>
+            <tr><td><strong>VERGE</strong></td>
+              <td class="col-sep">9.4</td><td>5.4</td><td>3.7</td>
+              <td class="col-sep">9.2</td><td>5.7</td><td><strong>5.8</strong></td>
+              <td class="col-sep">6.3</td><td>3.8</td><td>3.0</td>
+              <td class="col-sep">8.0</td><td>4.1</td><td>2.3</td>
+              <td class="col-sep">15.6</td><td>9.3</td><td>8.6</td>
+              <td class="col-sep">20.9</td><td>13.3</td><td>11.9</td></tr>
+
+            <tr class="group-row"><td colspan="19">InternVL3.5-38B</td></tr>
+            <tr><td><strong>EDGE</strong></td>
+              <td class="col-sep">5.5</td><td>3.5</td><td>2.0</td>
+              <td class="col-sep">2.5</td><td>1.8</td><td>1.5</td>
+              <td class="col-sep">1.3</td><td>0.6</td><td>0.5</td>
+              <td class="col-sep">8.7</td><td>1.8</td><td>2.0</td>
+              <td class="col-sep">5.1</td><td>2.7</td><td>2.3</td>
+              <td class="col-sep">9.3</td><td>6.6</td><td>4.9</td></tr>
+            <tr><td><strong>SAGE</strong></td>
+              <td class="col-sep">10.5</td><td>3.8</td><td>3.0</td>
+              <td class="col-sep">7.3</td><td>2.2</td><td>1.9</td>
+              <td class="col-sep">3.9</td><td>1.7</td><td>1.1</td>
+              <td class="col-sep">7.1</td><td>3.6</td><td>2.0</td>
+              <td class="col-sep">7.6</td><td>2.8</td><td>2.5</td>
+              <td class="col-sep">19.3</td><td>11.1</td><td>6.8</td></tr>
+            <tr><td><strong>VERGE</strong></td>
+              <td class="col-sep">8.6</td><td>4.1</td><td>2.8</td>
+              <td class="col-sep">5.6</td><td>2.1</td><td>2.0</td>
+              <td class="col-sep">2.1</td><td>1.0</td><td>0.7</td>
+              <td class="col-sep">10.1</td><td>2.1</td><td>2.1</td>
+              <td class="col-sep">5.2</td><td>2.5</td><td>2.1</td>
+              <td class="col-sep">16.4</td><td>10.0</td><td>6.3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="is-size-6 has-text-grey has-text-centered" style="margin-top:.5rem;">
+        <strong>Table 2.</strong> Prompt-level grounding performance across models and diagram domains. We compare three prompting strategies (EDGE, SAGE, VERGE) using Max-Pair IoU (MP<sub>IoU</sub>), Grounding IoU (G<sub>IoU</sub>), and F1. The table shows strong prompt sensitivity and a consistent gap between coarse localization and reasoning-level evidence grounding across datasets.
+      </p>
+      </div>
+      </div> <!-- /.pane-stage -->
+
+    </div>
+  </div>
+</section>
+
+
+<script>
+  (function () {
+    var toggle = document.getElementById('results-tabs');
+    var pill = toggle.querySelector('.seg-indicator');
+    var btns = toggle.querySelectorAll('.seg-btn');
+    var stage = document.querySelector('.pane-stage');
+
+    function movePill(btn) {
+      pill.style.width = btn.offsetWidth + 'px';
+      pill.style.transform = 'translateX(' + (btn.offsetLeft - 4) + 'px)';
+      pill.style.backgroundColor = btn.dataset.color;
+    }
+
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (btn.classList.contains('is-active')) return;
+        var current = stage.querySelector('.pane.is-active');
+        var next = document.getElementById(btn.dataset.pane);
+
+        // animate the container from the old table's height to the new one's
+        stage.style.height = stage.offsetHeight + 'px';
+        btns.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+        movePill(btn);
+        current.classList.remove('is-active');
+        next.classList.add('is-active');
+        requestAnimationFrame(function () { stage.style.height = next.offsetHeight + 'px'; });
+      });
+    });
+
+    stage.addEventListener('transitionend', function (e) {
+      if (e.target === stage && e.propertyName === 'height') stage.style.height = '';
+    });
+
+    function init() { movePill(toggle.querySelector('.seg-btn.is-active')); }
+    init();
+    window.addEventListener('load', init);      // after web fonts settle
+    window.addEventListener('resize', init);
+  })();
+</script>
+
+
+  <!-- ===== Video Presentation (optional embed) ===== -->
+  <!-- <section class="hero is-small is-light">
+    <div class="hero-body">
+      <div class="container">
+        <h2 class="title is-3">Video Presentation</h2>
+        <div class="columns is-centered has-text-centered">
+          <div class="column is-four-fifths">
+            <div class="publication-video">
+              <iframe src="https://www.youtube.com/embed/VIDEO_ID" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section> -->
+
+<!-- ===== Team (Authors from the paper) ===== -->
+<section class="section" id="team">
+  <div class="container">
+    <h2 class="title is-2 has-text-centered">Team</h2>
+
+    <div class="team-row">
+      <div class="team-member has-text-centered aff-asu">
+        <a href="https://anirudh6415.github.io/" target="_blank">
+          <img src="images/authors/anirudh_crop.png" alt="Anirudh Iyengar Kaniyar Narayana Iyengar" class="img-shadow" />
+          Anirudh Iyengar
+        </a>
+      </div>
+
+      <div class="team-member has-text-centered aff-asu">
+        <a href="https://www.linkedin.com/in/tampuravi/" target="_blank">
+          <img src="images/authors/tampu-ravi-kumar_crop.jpg" alt="Tampu Ravi Kumar" class="img-shadow" />
+          Tampu <br> Ravi Kumar
+        </a>
+      </div>
+
+      <div class="team-member has-text-centered aff-asu">
+        <a href="https://www.linkedin.com/in/gauravnajpande/" target="_blank">
+          <img src="images/authors/gaurav_crop.jpg" alt="Gaurav Najpande" class="img-shadow" />
+          Gaurav <br> Najpande
+        </a>
+      </div>
+
+      <div class="team-member has-text-centered aff-umd">
+        <a href="https://manansuri.com/" target="_blank">
+          <img src="images/authors/manansuri.jpg" alt="Manan Suri" class="img-shadow" />
+          Manan Suri
+        </a>
+      </div>
+
+      <div class="team-member has-text-centered aff-umd">
+        <a href="https://www.cs.umd.edu/people/dmanocha" target="_blank">
+          <img src="images/authors/dinesh-m.jpg" alt="Dinesh Manocha" class="img-shadow" />
+          Dinesh <br> Manocha
+        </a>
+      </div>
+
+      <div class="team-member has-text-centered aff-adobe">
+        <a href="https://research.adobe.com/person/puneet-mathur/" target="_blank">
+          <img src="images/authors/puneeth_mathur_crop.jpg" alt="Puneet Mathur" class="img-shadow" />
+          Puneet <br> Mathur
+        </a>
+      </div>
+
+      <div class="team-member has-text-centered aff-asu">
+        <a href="https://vgupta123.github.io/" target="_blank">
+          <img src="images/authors/Vivek_gupta.png" alt="Vivek Gupta" class="img-shadow" />
+          Vivek Gupta
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+  <!-- ===== BibTeX ===== -->
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title">BibTeX</h2>
+      <h4>Please cite our paper as below if you use the DRAGON dataset.</h4>
+      <pre><code>@article{iyengar2026dragon,
+  title={DRAGON: A Benchmark for Evidence-Grounded Visual Reasoning over Diagrams},
+  author={Iyengar, Anirudh Iyengar Kaniyar Narayana and Kumar, Tampu Ravi and Najpande, Gaurav and Suri, Manan and Manocha, Dinesh and Mathur, Puneet and Gupta, Vivek},
+  journal={arXiv preprint arXiv:2604.25231},
+  year={2026}
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- Partner Logos Strip -->
+  <section class="logo-strip">
+    <div class="container has-text-centered">
+      <div class="logo-row">
+        <a href="https://engineering.asu.edu/" target="_blank">
+          <img src="images/authors/ASU-logo.png" alt="ASU" class="logo-strip-img">
+        </a>
+        <a href="https://umd.edu/" target="_blank">
+          <img src="images/authors/umc.png" alt="University of Maryland" class="logo-strip-img">
+        </a>
+        <a href="https://research.adobe.com/" target="_blank">
+          <img src="images/authors/adobe.png" alt="Adobe Research" class="logo-strip-img">
+        </a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content">
+            <p>
+              This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page. You are free to borrow the source code of this website; please link back to this page in the footer. This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
